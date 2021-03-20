@@ -4,6 +4,7 @@
 -iChannel.close(aPort) return rClosed
 
 ## iChannelSocket
+-iChannelSocket.isOpen() return rOpen
 -iChannelSocket.close() return rClosed
 -iChannelSocket.send(aAddress, ...) return rSent
 -iChannelSocket.broadcast(aAddress, aPort, ...) return rSent

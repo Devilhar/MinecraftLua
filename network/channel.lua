@@ -20,6 +20,9 @@ channelCreate = function(aIModem)
 
         local iChannelSocket = {}
 
+        iChannelSocket.isOpen = function()
+            return aIModem.isOpen(aPort) and channelMap[aPort]
+        end
         iChannelSocket.close = function()
             channelMap[aPort] = nil
 
