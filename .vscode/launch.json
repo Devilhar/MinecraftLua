@@ -1,0 +1,11 @@
+{
+    "version": "1.0.0",
+    "configurations": [
+        {
+            "type": "lua",
+            "request": "launch",
+            "name": "Test Network",
+            "program": "${workspaceFolder}/tests/tests.lua"
+        }
+    ]
+}
