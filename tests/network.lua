@@ -16,8 +16,7 @@ testNetworkChannel = function(aCheck)
             end
         end
 
-        aIChannel.setCallback(callback)
-
+        aIChannel.addCallback(callback)
         return messageQueue
     end
 

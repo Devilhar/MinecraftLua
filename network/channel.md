@@ -8,4 +8,5 @@
 -iChannelSocket.close() return rClosed
 -iChannelSocket.send(aAddress, ...) return rSent
 -iChannelSocket.broadcast(aAddress, aPort, ...) return rSent
--iChannelSocket.setCallback(aCallback) return nil
+-iChannelSocket.addCallback(aCallback) return rCallbackId
+-iChannelSocket.removeCallback(aCallbackId) return rRemoved
