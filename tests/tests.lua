@@ -53,4 +53,12 @@ end
 
 runTest(testNetworkChannel,         "NetworkChannel")
 
+print()
+
 print("Total tests passed: " .. countGlobalSuccess .. "/" .. countGlobalTests)
+
+if countGlobalSuccess ~= countGlobalTests then
+    print()
+
+    print("#ERROR: Test/s failed!")
+end
