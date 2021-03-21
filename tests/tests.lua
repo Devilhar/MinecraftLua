@@ -51,6 +51,21 @@ local runTest = function(aTest, aTestName)
     countGlobalSuccess = countGlobalSuccess + countSuccess
 end
 
-runTest(testNetworkChannel,         "NetworkChannel")
+runTest(testNetworkChannel,                                 "NetworkChannel")
+runTest(testNetworkSafeConnectionClientMessage,             "NetworkSafeConnectionClientMessage")
+runTest(testNetworkSafeConnectionClientPing,                "NetworkSafeConnectionClientPing")
+runTest(testNetworkSafeConnectionClientTimeout,             "NetworkSafeConnectionClientTimeout")
+runTest(testNetworkSafeConnectionClientTimeoutAfterPing,    "NetworkSafeConnectionClientTimeoutAfterPing")
+runTest(testNetworkSafeConnectionClientCloseFromServer,     "NetworkSafeConnectionClientCloseFromServer")
+runTest(testNetworkSafeConnectionClientCloseFromClient,     "NetworkSafeConnectionClientCloseFromClient")
+runTest(testNetworkSafeConnectionAcceptor,                  "NetworkSafeConnectionAcceptor")
+
+print()
 
 print("Total tests passed: " .. countGlobalSuccess .. "/" .. countGlobalTests)
+
+if countGlobalSuccess ~= countGlobalTests then
+    print()
+
+    print("#ERROR: Test/s failed!")
+end
