@@ -1,5 +1,6 @@
 
-require("tests/network")
+require("tests/io/testsChannel")
+require("tests/io/testsSafeConnection")
 
 local config = {
     throwError = true
@@ -8,58 +9,58 @@ local config = {
 local countGlobalTests = 0
 local countGlobalSuccess = 0
 
-local runTest = function(aTest, aTestName)
+local runTests = function(aTestData)
+    local runTest = function(aTest, aTestName)
+        local countTests = 0
+        local countSuccess = 0
+        local countFailure = 0
+        local lastLabel = "[TEST START]"
 
-    local countTests = 0
-    local countSuccess = 0
-    local countFailure = 0
-    local lastLabel = "[TEST START]"
+        local checkFunc = function(aResult, aLabel)
+            countTests = countTests + 1
+            lastLabel = aLabel
 
-    local checkFunc = function(aResult, aLabel)
-        countTests = countTests + 1
-        lastLabel = aLabel
+            if aResult then
+                countSuccess = countSuccess + 1
 
-        if aResult then
-            countSuccess = countSuccess + 1
+                return
+            end
 
-            return
+            countFailure = countFailure + 1
+            print("    Check failed: " .. aLabel .. "(" .. countTests .. ")")
         end
 
-        countFailure = countFailure + 1
-        print("  Check failed: " .. aLabel .. "(" .. countTests .. ")")
-    end
+        print("  " .. aTestName .. ":")
 
-    print(aTestName .. ":")
+        local executor = pcall
 
-    local executor = pcall
+        if config.throwError then
+            executor = function(aFunc, ...)
+                aFunc(...)
 
-    if config.throwError then
-        executor = function(aFunc, ...)
-            aFunc(...)
-
-            return true
+                return true
+            end
         end
+
+        if executor(aTest, checkFunc) then
+            print("    Tests passed: " .. countSuccess .. "/" .. countTests)
+        else
+            print("    Tests threw an error after " .. lastLabel .. "(" .. countTests .. ")")
+        end
+
+        countGlobalTests = countGlobalTests + countTests
+        countGlobalSuccess = countGlobalSuccess + countSuccess
     end
 
-    if executor(aTest, checkFunc) then
-        print("  Tests passed: " .. countSuccess .. "/" .. countTests)
-    else
-        print("  Tests threw an error after " .. lastLabel .. "(" .. countTests .. ")")
+    print(aTestData.name)
+    
+    for _, testData in ipairs(aTestData.tests) do
+        runTest(testData.test, testData.name)
     end
-
-    countGlobalTests = countGlobalTests + countTests
-    countGlobalSuccess = countGlobalSuccess + countSuccess
 end
 
-runTest(testNetworkChannel,                                 "NetworkChannel")
-runTest(testNetworkSafeConnectionClientMessage,             "NetworkSafeConnectionClientMessage")
-runTest(testNetworkSafeConnectionClientPing,                "NetworkSafeConnectionClientPing")
-runTest(testNetworkSafeConnectionClientTimeout,             "NetworkSafeConnectionClientTimeout")
-runTest(testNetworkSafeConnectionClientTimeoutAfterPing,    "NetworkSafeConnectionClientTimeoutAfterPing")
-runTest(testNetworkSafeConnectionClientCloseFromServer,     "NetworkSafeConnectionClientCloseFromServer")
-runTest(testNetworkSafeConnectionClientCloseFromClient,     "NetworkSafeConnectionClientCloseFromClient")
-runTest(testNetworkSafeConnectionAcceptor,                  "NetworkSafeConnectionAcceptor")
-runTest(testNetworkSafeConnection,                          "NetworkSafeConnection")
+runTests(testsChannel)
+runTests(testsSafeConnection)
 
 print()
 

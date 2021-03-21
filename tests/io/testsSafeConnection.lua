@@ -1,62 +1,11 @@
 
-require("network/channel")
-require("network/safeConnection")
+require("api/io/channel")
+require("api/io/safeConnection")
 
-require("network/platform/mock/modem")
-require("network/platform/mock/os")
+require("api/adapters/mock/modem")
+require("api/adapters/mock/os")
 
-local createMessageQueue = function(aIChannel)
-    local messageQueue = {}
-
-    local callback = function(...)
-        local args = {...}
-
-        for _, arg in ipairs(args) do
-            table.insert(messageQueue, arg)
-        end
-    end
-
-    aIChannel.addCallback(callback)
-
-    return messageQueue
-end
-
--- iChannel
-
-testNetworkChannel = function(aCheck)
-    local networkMock = networkMockCreate()
-
-    local iModemA = networkMock.modemCreate("modemA")
-    local iModemB = networkMock.modemCreate("modemB")
-    
-    local iChannelA = channelCreate(iModemA)
-    local iChannelB = channelCreate(iModemB)
-    
-    local channel100A = iChannelA.open(100)
-    local channel200A = iChannelA.open(200)
-    local channel100B = iChannelB.open(100)
-    
-    local queue100A = createMessageQueue(channel100A)
-    local queue200A = createMessageQueue(channel200A)
-    local queue100B = createMessageQueue(channel100B)
-
-    channel100A.broadcast("A")
-    channel100B.send("modemA", "B")
-    channel100B.send("modemC", "C")
-    channel200A.broadcast("D")
-    
-    aCheck(#queue100A == 3,             #queue100A .. " == 3")
-    aCheck(#queue200A == 0,             #queue200A .. " == 0")
-    aCheck(#queue100B == 3,             #queue100B .. " == 3")
-    aCheck(queue100A[1] == 100,         tostring(queue100A[1]) .. " == 100")
-    aCheck(queue100A[2] == "modemB",    tostring(queue100A[2]) .. " == \"modemB\"")
-    aCheck(queue100A[3] == "B",         tostring(queue100A[3]) .. " == \"B\"")
-    aCheck(queue100B[1] == 100,         tostring(queue100B[1]) .. " == 100")
-    aCheck(queue100B[2] == "modemA",    tostring(queue100A[2]) .. " == \"modemA\"")
-    aCheck(queue100B[3] == "A",         tostring(queue100A[3]) .. " == \"A\"")
-end
-
--- iSafeConnectionConnector
+require("tests/io/ioCommon")
 
 local setupChannelSockets = function(...)
     local channelsData = {...}
@@ -85,7 +34,9 @@ local connectorSetupDataServer = {
     port = 300
 }
 
-testNetworkSafeConnectionClientMessage = function(aCheck)
+-- iSafeConnectionConnector
+
+testSafeConnectionClientMessage = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
     local queueServer = createMessageQueue(channelSocketServer)
     
@@ -232,7 +183,7 @@ testNetworkSafeConnectionClientMessage = function(aCheck)
     aCheck(#messagePayloadsClient == 3,                 #messagePayloadsClient .. " == 3")
 end
 
-testNetworkSafeConnectionClientPing = function(aCheck)
+testSafeConnectionClientPing = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
     local queueServer = createMessageQueue(channelSocketServer)
     
@@ -307,7 +258,7 @@ testNetworkSafeConnectionClientPing = function(aCheck)
 
 end
 
-testNetworkSafeConnectionClientTimeout = function(aCheck)
+testSafeConnectionClientTimeout = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
     local queueServer = createMessageQueue(channelSocketServer)
     
@@ -359,7 +310,7 @@ testNetworkSafeConnectionClientTimeout = function(aCheck)
     aCheck(countMessage == 0,               countMessage .. " == 0")
 end
 
-testNetworkSafeConnectionClientTimeoutAfterPing = function(aCheck)
+testSafeConnectionClientTimeoutAfterPing = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
     local queueServer = createMessageQueue(channelSocketServer)
     
@@ -433,7 +384,7 @@ testNetworkSafeConnectionClientTimeoutAfterPing = function(aCheck)
     aCheck(countMessage == 0,               countMessage .. " == 0")
 end
 
-testNetworkSafeConnectionClientCloseFromServer = function(aCheck)
+testSafeConnectionClientCloseFromServer = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
     local queueServer = createMessageQueue(channelSocketServer)
     
@@ -485,7 +436,7 @@ testNetworkSafeConnectionClientCloseFromServer = function(aCheck)
     aCheck(countMessage == 0,               countMessage .. " == 0")
 end
 
-testNetworkSafeConnectionClientCloseFromClient = function(aCheck)
+testSafeConnectionClientCloseFromClient = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
     local queueServer = createMessageQueue(channelSocketServer)
     
@@ -546,7 +497,7 @@ end
 
 -- iSafeConnectionAcceptor
 
-testNetworkSafeConnectionAcceptor = function(aCheck)
+testSafeConnectionAcceptor = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
 
     local queueClient = createMessageQueue(channelSocketClient)
@@ -620,7 +571,7 @@ end
 
 -- iSafeConnection Connection
 
-testNetworkSafeConnection = function(aCheck)
+testSafeConnection = function(aCheck)
     
     local countServerClosed             = 0
     local countServerConnect            = 0
@@ -922,3 +873,41 @@ testNetworkSafeConnection = function(aCheck)
     aCheck(countClientBClosed           == 1,           countClientBClosed          .. " == 1")
     aCheck(countClientBMessage          == 1,           countClientBMessage         .. " == 1")
 end
+
+testsSafeConnection = {
+    name = "SafeConnection",
+    tests = {
+        {
+            name = "SafeConnectionClientMessage",
+            test = testSafeConnectionClientMessage
+        },
+        {
+            name = "SafeConnectionClientPing",
+            test = testSafeConnectionClientPing
+        },
+        {
+            name = "SafeConnectionClientTimeout",
+            test = testSafeConnectionClientTimeout
+        },
+        {
+            name = "SafeConnectionClientTimeoutAfterPing",
+            test = testSafeConnectionClientTimeoutAfterPing
+        },
+        {
+            name = "SafeConnectionClientCloseFromServer",
+            test = testSafeConnectionClientCloseFromServer
+        },
+        {
+            name = "SafeConnectionClientCloseFromClient",
+            test = testSafeConnectionClientCloseFromClient
+        },
+        {
+            name = "SafeConnectionAcceptor",
+            test = testSafeConnectionAcceptor
+        },
+        {
+            name = "SafeConnection",
+            test = testSafeConnection
+        }
+    }
+}
