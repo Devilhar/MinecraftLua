@@ -105,7 +105,7 @@ safeConnectionCreate = function(aIOs)
 
             aIChannelSocket.removeCallback(callbackId)
 
-            aOnClosedConnection(aAddress)
+            aOnClosedConnection(aAddress, iSafeConnectionConnector)
         end
         local resetTimeout = function()
             if timerIdTimeout then
@@ -210,7 +210,7 @@ safeConnectionCreate = function(aIOs)
                 lastReceivedMessageId = messageId
                 table.remove(messages, 1)
 
-                aOnMessage(table.unpack(messages))
+                aOnMessage(aAddress, iSafeConnectionConnector, table.unpack(messages))
             elseif msgType == messageTypes.messageRsp then
                 resetTimeout()
                 messageResponse()
