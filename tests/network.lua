@@ -152,15 +152,17 @@ testNetworkSafeConnectionClientMessage = function(aCheck)
     -- Send message
     channelSocketServer.send("modemClient", "SC_MSG", 1, "Hello World")
     
-    aCheck(#queueServer == 11,                          #queueServer .. " == 11")
-    aCheck(queueServer[9] == 300,                       tostring(queueServer[9]) .. " == 300")
-    aCheck(queueServer[10] == "modemClient",            tostring(queueServer[10]) .. " == \"modemClient\"")
-    aCheck(queueServer[11] == "SC_MSR",                 tostring(queueServer[11]) .. " == \"SC_MSR\"")
-    aCheck(countConnect == 1,                           countConnect .. " == 1")
-    aCheck(countClosed == 0,                            countClosed .. " == 0")
-    aCheck(countMessage == 1,                           countMessage .. " == 1")
-    aCheck(#messagePayloadsClient == 1,                 #messagePayloadsClient .. " == 1")
-    aCheck(messagePayloadsClient[1] == "Hello World",   messagePayloadsClient[1] .. " == Hello World")
+    aCheck(#queueServer == 11,                              #queueServer .. " == 11")
+    aCheck(queueServer[9] == 300,                           tostring(queueServer[9]) .. " == 300")
+    aCheck(queueServer[10] == "modemClient",                tostring(queueServer[10]) .. " == \"modemClient\"")
+    aCheck(queueServer[11] == "SC_MSR",                     tostring(queueServer[11]) .. " == \"SC_MSR\"")
+    aCheck(countConnect == 1,                               countConnect .. " == 1")
+    aCheck(countClosed == 0,                                countClosed .. " == 0")
+    aCheck(countMessage == 1,                               countMessage .. " == 1")
+    aCheck(#messagePayloadsClient == 3,                     #messagePayloadsClient .. " == 3")
+    aCheck(messagePayloadsClient[1] == "modemServer",       tostring(messagePayloadsClient[1]) .. " == \"modemServer\"")
+    aCheck(messagePayloadsClient[2] == iSafeClientSocket,   tostring(messagePayloadsClient[2]) .. " == " .. tostring(iSafeClientSocket))
+    aCheck(messagePayloadsClient[3] == "Hello World",       tostring(messagePayloadsClient[3]) .. " == \"Hello World\"")
     
     iSafeClientSocket.send("Hello")
     
@@ -175,7 +177,7 @@ testNetworkSafeConnectionClientMessage = function(aCheck)
     aCheck(countConnect == 1,                           countConnect .. " == 1")
     aCheck(countClosed == 0,                            countClosed .. " == 0")
     aCheck(countMessage == 1,                           countMessage .. " == 1")
-    aCheck(#messagePayloadsClient == 1,                 #messagePayloadsClient .. " == 1")
+    aCheck(#messagePayloadsClient == 3,                 #messagePayloadsClient .. " == 3")
     
     mockOs.increaseTime(0.5)
     
@@ -188,7 +190,7 @@ testNetworkSafeConnectionClientMessage = function(aCheck)
     aCheck(countConnect == 1,                           countConnect .. " == 1")
     aCheck(countClosed == 0,                            countClosed .. " == 0")
     aCheck(countMessage == 1,                           countMessage .. " == 1")
-    aCheck(#messagePayloadsClient == 1,                 #messagePayloadsClient .. " == 1")
+    aCheck(#messagePayloadsClient == 3,                 #messagePayloadsClient .. " == 3")
     
     mockOs.increaseTime(0.5)
     
@@ -204,7 +206,7 @@ testNetworkSafeConnectionClientMessage = function(aCheck)
     aCheck(countConnect == 1,                           countConnect .. " == 1")
     aCheck(countClosed == 0,                            countClosed .. " == 0")
     aCheck(countMessage == 1,                           countMessage .. " == 1")
-    aCheck(#messagePayloadsClient == 1,                 #messagePayloadsClient .. " == 1")
+    aCheck(#messagePayloadsClient == 3,                 #messagePayloadsClient .. " == 3")
     
     -- Send message response
     channelSocketServer.send("modemClient", "SC_MSR")
@@ -218,7 +220,7 @@ testNetworkSafeConnectionClientMessage = function(aCheck)
     aCheck(countConnect == 1,                           countConnect .. " == 1")
     aCheck(countClosed == 0,                            countClosed .. " == 0")
     aCheck(countMessage == 1,                           countMessage .. " == 1")
-    aCheck(#messagePayloadsClient == 1,                 #messagePayloadsClient .. " == 1")
+    aCheck(#messagePayloadsClient == 3,                 #messagePayloadsClient .. " == 3")
     
     -- Send message response
     channelSocketServer.send("modemClient", "SC_MSR")
@@ -227,7 +229,7 @@ testNetworkSafeConnectionClientMessage = function(aCheck)
     aCheck(countConnect == 1,                           countConnect .. " == 1")
     aCheck(countClosed == 0,                            countClosed .. " == 0")
     aCheck(countMessage == 1,                           countMessage .. " == 1")
-    aCheck(#messagePayloadsClient == 1,                 #messagePayloadsClient .. " == 1")
+    aCheck(#messagePayloadsClient == 3,                 #messagePayloadsClient .. " == 3")
 end
 
 testNetworkSafeConnectionClientPing = function(aCheck)
@@ -614,4 +616,309 @@ testNetworkSafeConnectionAcceptor = function(aCheck)
     aCheck(countConnect == 1,               countConnect .. " == 1")
     aCheck(countConnectorClosed == 1,       countConnectorClosed .. " == 1")
     aCheck(countMessage == 0,               countMessage .. " == 0")
+end
+
+-- iSafeConnection Connection
+
+testNetworkSafeConnection = function(aCheck)
+    
+    local countServerClosed             = 0
+    local countServerConnect            = 0
+    local countServerConnectorClosed    = 0
+    local countServerMessage            = 0
+    local countClientAConnect           = 0
+    local countClientAClosed            = 0
+    local countClientAMessage           = 0
+    local countClientBConnect           = 0
+    local countClientBClosed            = 0
+    local countClientBMessage           = 0
+
+    local serverAcceptor    = nil
+    local serverConnectorA  = nil
+    local serverConnectorB  = nil
+    local clientAConnector  = nil
+    local clientBConnector  = nil
+
+    local serverMessageQueue    = {}
+    local clientAMessageQueue   = {}
+    local clientBMessageQueue   = {}
+
+    local onServerClosed = function()
+        countServerClosed = countServerClosed + 1
+    end
+    local onServerConnect = function(aAddress, aConnector)
+        countServerConnect = countServerConnect + 1
+        if aAddress == "modemClientA" then
+            serverConnectorA = aConnector
+        elseif aAddress == "modemClientB" then
+            serverConnectorB = aConnector
+        end
+    end
+    local onServerConnectorClosed = function()
+        countServerConnectorClosed = countServerConnectorClosed + 1
+    end
+    local onServerMessage = function(...)
+        countServerMessage = countServerMessage + 1
+        for _, message in ipairs({...}) do
+            table.insert(serverMessageQueue, message)
+        end
+    end
+    local onClientAConnect = function()
+        countClientAConnect = countClientAConnect + 1
+    end
+    local onClientAClosed = function()
+        countClientAClosed = countClientAClosed + 1
+    end
+    local onClientAMessage = function(...)
+        countClientAMessage = countClientAMessage + 1
+        for _, message in ipairs({...}) do
+            table.insert(clientAMessageQueue, message)
+        end
+    end
+    local onClientBConnect = function()
+        countClientBConnect = countClientBConnect + 1
+    end
+    local onClientBClosed = function()
+        countClientBClosed = countClientBClosed + 1
+    end
+    local onClientBMessage = function(...)
+        countClientBMessage = countClientBMessage + 1
+        for _, message in ipairs({...}) do
+            table.insert(clientBMessageQueue, message)
+        end
+    end
+
+    local connectorDataServer = {
+        address = "modemServer",
+        port = 400
+    }
+    local connectorDataClientA = {
+        address = "modemClientA",
+        port = 400
+    }
+    local connectorDataClientB = {
+        address = "modemClientB",
+        port = 400
+    }
+
+    local iOs, mockOs = osMockCreate()
+    
+    local serverChannelSocket, clientAChannelSocket, clientBChannelSocket = setupChannelSockets(connectorDataServer, connectorDataClientA, connectorDataClientB)
+    local iSafeConnection = safeConnectionCreate(iOs)
+
+    serverAcceptor = iSafeConnection.accept(serverChannelSocket, onServerClosed, onServerConnect, onServerConnectorClosed, onServerMessage)
+    
+    aCheck(serverAcceptor.isOpen(),             tostring(serverAcceptor.isOpen()))
+    aCheck(not serverConnectorA,                "not " .. tostring(serverConnectorA))
+    aCheck(not serverConnectorB,                "not " .. tostring(serverConnectorB))
+    aCheck(not clientAConnector,                "not " .. tostring(clientAConnector))
+    aCheck(not clientBConnector,                "not " .. tostring(clientBConnector))
+    aCheck(#serverMessageQueue          == 0,   #serverMessageQueue         .. " == 0")
+    aCheck(#clientAMessageQueue         == 0,   #clientAMessageQueue        .. " == 0")
+    aCheck(#clientBMessageQueue         == 0,   #clientBMessageQueue        .. " == 0")
+    aCheck(countServerClosed            == 0,   countServerClosed           .. " == 0")
+    aCheck(countServerConnect           == 0,   countServerConnect          .. " == 0")
+    aCheck(countServerConnectorClosed   == 0,   countServerConnectorClosed  .. " == 0")
+    aCheck(countServerMessage           == 0,   countServerMessage          .. " == 0")
+    aCheck(countClientAConnect          == 0,   countClientAConnect         .. " == 0")
+    aCheck(countClientAClosed           == 0,   countClientAClosed          .. " == 0")
+    aCheck(countClientAMessage          == 0,   countClientAMessage         .. " == 0")
+    aCheck(countClientBConnect          == 0,   countClientBConnect         .. " == 0")
+    aCheck(countClientBClosed           == 0,   countClientBClosed          .. " == 0")
+    aCheck(countClientBMessage          == 0,   countClientBMessage         .. " == 0")
+
+    clientAConnector = iSafeConnection.connect(clientAChannelSocket, "modemServer", onClientAConnect, onClientAClosed, onClientAMessage)
+
+    aCheck(serverAcceptor.isOpen(),         tostring(serverAcceptor.isOpen()))
+    aCheck(serverConnectorA.isOpen(),       tostring(serverConnectorA.isOpen()))
+    aCheck(not serverConnectorB,            "not " .. tostring(serverConnectorB))
+    aCheck(clientAConnector.isOpen(),       tostring(clientAConnector.isOpen()))
+    aCheck(not clientBConnector,            "not " .. tostring(clientBConnector))
+    aCheck(#serverMessageQueue          == 0,   #serverMessageQueue         .. " == 0")
+    aCheck(#clientAMessageQueue         == 0,   #clientAMessageQueue        .. " == 0")
+    aCheck(#clientBMessageQueue         == 0,   #clientBMessageQueue        .. " == 0")
+    aCheck(countServerClosed            == 0,   countServerClosed           .. " == 0")
+    aCheck(countServerConnect           == 1,   countServerConnect          .. " == 1")
+    aCheck(countServerConnectorClosed   == 0,   countServerConnectorClosed  .. " == 0")
+    aCheck(countServerMessage           == 0,   countServerMessage          .. " == 0")
+    aCheck(countClientAConnect          == 1,   countClientAConnect         .. " == 1")
+    aCheck(countClientAClosed           == 0,   countClientAClosed          .. " == 0")
+    aCheck(countClientAMessage          == 0,   countClientAMessage         .. " == 0")
+    aCheck(countClientBConnect          == 0,   countClientBConnect         .. " == 0")
+    aCheck(countClientBClosed           == 0,   countClientBClosed          .. " == 0")
+    aCheck(countClientBMessage          == 0,   countClientBMessage         .. " == 0")
+
+    clientBConnector = iSafeConnection.connect(clientBChannelSocket, "modemServer", onClientBConnect, onClientBClosed, onClientBMessage)
+
+    aCheck(serverAcceptor.isOpen(),     tostring(serverAcceptor.isOpen()))
+    aCheck(serverConnectorA.isOpen(),   tostring(serverConnectorA.isOpen()))
+    aCheck(serverConnectorB.isOpen(),   tostring(serverConnectorB.isOpen()))
+    aCheck(clientAConnector.isOpen(),   tostring(clientAConnector.isOpen()))
+    aCheck(clientBConnector.isOpen(),   tostring(clientBConnector.isOpen()))
+    aCheck(#serverMessageQueue          == 0,   #serverMessageQueue         .. " == 0")
+    aCheck(#clientAMessageQueue         == 0,   #clientAMessageQueue        .. " == 0")
+    aCheck(#clientBMessageQueue         == 0,   #clientBMessageQueue        .. " == 0")
+    aCheck(countServerClosed            == 0,   countServerClosed           .. " == 0")
+    aCheck(countServerConnect           == 2,   countServerConnect          .. " == 2")
+    aCheck(countServerConnectorClosed   == 0,   countServerConnectorClosed  .. " == 0")
+    aCheck(countServerMessage           == 0,   countServerMessage          .. " == 0")
+    aCheck(countClientAConnect          == 1,   countClientAConnect         .. " == 1")
+    aCheck(countClientAClosed           == 0,   countClientAClosed          .. " == 0")
+    aCheck(countClientAMessage          == 0,   countClientAMessage         .. " == 0")
+    aCheck(countClientBConnect          == 1,   countClientBConnect         .. " == 1")
+    aCheck(countClientBClosed           == 0,   countClientBClosed          .. " == 0")
+    aCheck(countClientBMessage          == 0,   countClientBMessage         .. " == 0")
+
+    mockOs.increaseTime(1)
+    
+    aCheck(serverAcceptor.isOpen(),     tostring(serverAcceptor.isOpen()))
+    aCheck(serverConnectorA.isOpen(),   tostring(serverConnectorA.isOpen()))
+    aCheck(serverConnectorB.isOpen(),   tostring(serverConnectorB.isOpen()))
+    aCheck(clientAConnector.isOpen(),   tostring(clientAConnector.isOpen()))
+    aCheck(clientBConnector.isOpen(),   tostring(clientBConnector.isOpen()))
+    aCheck(#serverMessageQueue          == 0,   #serverMessageQueue         .. " == 0")
+    aCheck(#clientAMessageQueue         == 0,   #clientAMessageQueue        .. " == 0")
+    aCheck(#clientBMessageQueue         == 0,   #clientBMessageQueue        .. " == 0")
+    aCheck(countServerClosed            == 0,   countServerClosed           .. " == 0")
+    aCheck(countServerConnect           == 2,   countServerConnect          .. " == 2")
+    aCheck(countServerConnectorClosed   == 0,   countServerConnectorClosed  .. " == 0")
+    aCheck(countServerMessage           == 0,   countServerMessage          .. " == 0")
+    aCheck(countClientAConnect          == 1,   countClientAConnect         .. " == 1")
+    aCheck(countClientAClosed           == 0,   countClientAClosed          .. " == 0")
+    aCheck(countClientAMessage          == 0,   countClientAMessage         .. " == 0")
+    aCheck(countClientBConnect          == 1,   countClientBConnect         .. " == 1")
+    aCheck(countClientBClosed           == 0,   countClientBClosed          .. " == 0")
+    aCheck(countClientBMessage          == 0,   countClientBMessage         .. " == 0")
+
+    mockOs.increaseTime(1)
+    
+    aCheck(serverAcceptor.isOpen(),     tostring(serverAcceptor.isOpen()))
+    aCheck(serverConnectorA.isOpen(),   tostring(serverConnectorA.isOpen()))
+    aCheck(serverConnectorB.isOpen(),   tostring(serverConnectorB.isOpen()))
+    aCheck(clientAConnector.isOpen(),   tostring(clientAConnector.isOpen()))
+    aCheck(clientBConnector.isOpen(),   tostring(clientBConnector.isOpen()))
+    aCheck(#serverMessageQueue          == 0,   #serverMessageQueue         .. " == 0")
+    aCheck(#clientAMessageQueue         == 0,   #clientAMessageQueue        .. " == 0")
+    aCheck(#clientBMessageQueue         == 0,   #clientBMessageQueue        .. " == 0")
+    aCheck(countServerClosed            == 0,   countServerClosed           .. " == 0")
+    aCheck(countServerConnect           == 2,   countServerConnect          .. " == 2")
+    aCheck(countServerConnectorClosed   == 0,   countServerConnectorClosed  .. " == 0")
+    aCheck(countServerMessage           == 0,   countServerMessage          .. " == 0")
+    aCheck(countClientAConnect          == 1,   countClientAConnect         .. " == 1")
+    aCheck(countClientAClosed           == 0,   countClientAClosed          .. " == 0")
+    aCheck(countClientAMessage          == 0,   countClientAMessage         .. " == 0")
+    aCheck(countClientBConnect          == 1,   countClientBConnect         .. " == 1")
+    aCheck(countClientBClosed           == 0,   countClientBClosed          .. " == 0")
+    aCheck(countClientBMessage          == 0,   countClientBMessage         .. " == 0")
+    
+    mockOs.increaseTime(4)
+    
+    aCheck(serverAcceptor.isOpen(),     tostring(serverAcceptor.isOpen()))
+    aCheck(serverConnectorA.isOpen(),   tostring(serverConnectorA.isOpen()))
+    aCheck(serverConnectorB.isOpen(),   tostring(serverConnectorB.isOpen()))
+    aCheck(clientAConnector.isOpen(),   tostring(clientAConnector.isOpen()))
+    aCheck(clientBConnector.isOpen(),   tostring(clientBConnector.isOpen()))
+    aCheck(#serverMessageQueue          == 0,   #serverMessageQueue         .. " == 0")
+    aCheck(#clientAMessageQueue         == 0,   #clientAMessageQueue        .. " == 0")
+    aCheck(#clientBMessageQueue         == 0,   #clientBMessageQueue        .. " == 0")
+    aCheck(countServerClosed            == 0,   countServerClosed           .. " == 0")
+    aCheck(countServerConnect           == 2,   countServerConnect          .. " == 2")
+    aCheck(countServerConnectorClosed   == 0,   countServerConnectorClosed  .. " == 0")
+    aCheck(countServerMessage           == 0,   countServerMessage          .. " == 0")
+    aCheck(countClientAConnect          == 1,   countClientAConnect         .. " == 1")
+    aCheck(countClientAClosed           == 0,   countClientAClosed          .. " == 0")
+    aCheck(countClientAMessage          == 0,   countClientAMessage         .. " == 0")
+    aCheck(countClientBConnect          == 1,   countClientBConnect         .. " == 1")
+    aCheck(countClientBClosed           == 0,   countClientBClosed          .. " == 0")
+    aCheck(countClientBMessage          == 0,   countClientBMessage         .. " == 0")
+
+    clientAConnector.send("Hello")
+    
+    aCheck(serverAcceptor.isOpen(),                             tostring(serverAcceptor.isOpen()))
+    aCheck(serverConnectorA.isOpen(),                           tostring(serverConnectorA.isOpen()))
+    aCheck(serverConnectorB.isOpen(),                           tostring(serverConnectorB.isOpen()))
+    aCheck(clientAConnector.isOpen(),                           tostring(clientAConnector.isOpen()))
+    aCheck(clientBConnector.isOpen(),                           tostring(clientBConnector.isOpen()))
+    aCheck(#serverMessageQueue          == 3,                   #serverMessageQueue         .. " == 3")
+    aCheck(#clientAMessageQueue         == 0,                   #clientAMessageQueue        .. " == 0")
+    aCheck(#clientBMessageQueue         == 0,                   #clientBMessageQueue        .. " == 0")
+    aCheck(countServerClosed            == 0,                   countServerClosed           .. " == 0")
+    aCheck(countServerConnect           == 2,                   countServerConnect          .. " == 2")
+    aCheck(countServerConnectorClosed   == 0,                   countServerConnectorClosed  .. " == 0")
+    aCheck(countServerMessage           == 1,                   countServerMessage          .. " == 1")
+    aCheck(countClientAConnect          == 1,                   countClientAConnect         .. " == 1")
+    aCheck(countClientAClosed           == 0,                   countClientAClosed          .. " == 0")
+    aCheck(countClientAMessage          == 0,                   countClientAMessage         .. " == 0")
+    aCheck(countClientBConnect          == 1,                   countClientBConnect         .. " == 1")
+    aCheck(countClientBClosed           == 0,                   countClientBClosed          .. " == 0")
+    aCheck(countClientBMessage          == 0,                   countClientBMessage         .. " == 0")
+    aCheck(serverMessageQueue[1]        == "modemClientA",      tostring(serverMessageQueue[1]) .. " == \"modemClientA\"")
+    aCheck(serverMessageQueue[2]        == serverConnectorA,    tostring(serverMessageQueue[2]) .. " == " .. tostring(serverConnectorA))
+    aCheck(serverMessageQueue[3]        == "Hello",             tostring(serverMessageQueue[3]) .. " == \"Hello\"")
+
+    serverConnectorB.send("World")
+    
+    aCheck(serverAcceptor.isOpen(),                             tostring(serverAcceptor.isOpen()))
+    aCheck(serverConnectorA.isOpen(),                           tostring(serverConnectorA.isOpen()))
+    aCheck(serverConnectorB.isOpen(),                           tostring(serverConnectorB.isOpen()))
+    aCheck(clientAConnector.isOpen(),                           tostring(clientAConnector.isOpen()))
+    aCheck(clientBConnector.isOpen(),                           tostring(clientBConnector.isOpen()))
+    aCheck(#serverMessageQueue          == 3,                   #serverMessageQueue         .. " == 3")
+    aCheck(#clientAMessageQueue         == 0,                   #clientAMessageQueue        .. " == 0")
+    aCheck(#clientBMessageQueue         == 3,                   #clientBMessageQueue        .. " == 3")
+    aCheck(countServerClosed            == 0,                   countServerClosed           .. " == 0")
+    aCheck(countServerConnect           == 2,                   countServerConnect          .. " == 2")
+    aCheck(countServerConnectorClosed   == 0,                   countServerConnectorClosed  .. " == 0")
+    aCheck(countServerMessage           == 1,                   countServerMessage          .. " == 1")
+    aCheck(countClientAConnect          == 1,                   countClientAConnect         .. " == 1")
+    aCheck(countClientAClosed           == 0,                   countClientAClosed          .. " == 0")
+    aCheck(countClientAMessage          == 0,                   countClientAMessage         .. " == 0")
+    aCheck(countClientBConnect          == 1,                   countClientBConnect         .. " == 1")
+    aCheck(countClientBClosed           == 0,                   countClientBClosed          .. " == 0")
+    aCheck(countClientBMessage          == 1,                   countClientBMessage         .. " == 1")
+    aCheck(clientBMessageQueue[1]       == "modemServer",       tostring(clientBMessageQueue[1]) .. " == \"modemServer\"")
+    aCheck(clientBMessageQueue[2]       == clientBConnector,    tostring(clientBMessageQueue[2]) .. " == " .. tostring(clientBConnector))
+    aCheck(clientBMessageQueue[3]       == "World",             tostring(clientBMessageQueue[3]) .. " == \"World\"")
+
+    clientBConnector.close()
+    
+    aCheck(serverAcceptor.isOpen(),                     tostring(serverAcceptor.isOpen()))
+    aCheck(serverConnectorA.isOpen(),                   tostring(serverConnectorA.isOpen()))
+    aCheck(not serverConnectorB.isOpen(),               "not " .. tostring(serverConnectorB.isOpen()))
+    aCheck(clientAConnector.isOpen(),                   tostring(clientAConnector.isOpen()))
+    aCheck(not clientBConnector.isOpen(),               "not " .. tostring(clientBConnector.isOpen()))
+    aCheck(#serverMessageQueue          == 3,           #serverMessageQueue         .. " == 3")
+    aCheck(#clientAMessageQueue         == 0,           #clientAMessageQueue        .. " == 0")
+    aCheck(#clientBMessageQueue         == 3,           #clientBMessageQueue        .. " == 3")
+    aCheck(countServerClosed            == 0,           countServerClosed           .. " == 0")
+    aCheck(countServerConnect           == 2,           countServerConnect          .. " == 2")
+    aCheck(countServerConnectorClosed   == 1,           countServerConnectorClosed  .. " == 1")
+    aCheck(countServerMessage           == 1,           countServerMessage          .. " == 1")
+    aCheck(countClientAConnect          == 1,           countClientAConnect         .. " == 1")
+    aCheck(countClientAClosed           == 0,           countClientAClosed          .. " == 0")
+    aCheck(countClientAMessage          == 0,           countClientAMessage         .. " == 0")
+    aCheck(countClientBConnect          == 1,           countClientBConnect         .. " == 1")
+    aCheck(countClientBClosed           == 1,           countClientBClosed          .. " == 1")
+    aCheck(countClientBMessage          == 1,           countClientBMessage         .. " == 1")
+
+    serverAcceptor.close()
+    
+    aCheck(not serverAcceptor.isOpen(),                 "not " .. tostring(serverAcceptor.isOpen()))
+    aCheck(not serverConnectorA.isOpen(),               "not " .. tostring(serverConnectorA.isOpen()))
+    aCheck(not serverConnectorB.isOpen(),               "not " .. tostring(serverConnectorB.isOpen()))
+    aCheck(not clientAConnector.isOpen(),               "not " .. tostring(clientAConnector.isOpen()))
+    aCheck(not clientBConnector.isOpen(),               "not " .. tostring(clientBConnector.isOpen()))
+    aCheck(#serverMessageQueue          == 3,           #serverMessageQueue         .. " == 3")
+    aCheck(#clientAMessageQueue         == 0,           #clientAMessageQueue        .. " == 0")
+    aCheck(#clientBMessageQueue         == 3,           #clientBMessageQueue        .. " == 3")
+    aCheck(countServerClosed            == 1,           countServerClosed           .. " == 1")
+    aCheck(countServerConnect           == 2,           countServerConnect          .. " == 2")
+    aCheck(countServerConnectorClosed   == 2,           countServerConnectorClosed  .. " == 2")
+    aCheck(countServerMessage           == 1,           countServerMessage          .. " == 1")
+    aCheck(countClientAConnect          == 1,           countClientAConnect         .. " == 1")
+    aCheck(countClientAClosed           == 1,           countClientAClosed          .. " == 1")
+    aCheck(countClientAMessage          == 0,           countClientAMessage         .. " == 0")
+    aCheck(countClientBConnect          == 1,           countClientBConnect         .. " == 1")
+    aCheck(countClientBClosed           == 1,           countClientBClosed          .. " == 1")
+    aCheck(countClientBMessage          == 1,           countClientBMessage         .. " == 1")
 end

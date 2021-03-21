@@ -2,7 +2,7 @@
 require("tests/network")
 
 local config = {
-    throwError = false
+    throwError = true
 }
 
 local countGlobalTests = 0
@@ -59,6 +59,7 @@ runTest(testNetworkSafeConnectionClientTimeoutAfterPing,    "NetworkSafeConnecti
 runTest(testNetworkSafeConnectionClientCloseFromServer,     "NetworkSafeConnectionClientCloseFromServer")
 runTest(testNetworkSafeConnectionClientCloseFromClient,     "NetworkSafeConnectionClientCloseFromClient")
 runTest(testNetworkSafeConnectionAcceptor,                  "NetworkSafeConnectionAcceptor")
+runTest(testNetworkSafeConnection,                          "NetworkSafeConnection")
 
 print()
 
