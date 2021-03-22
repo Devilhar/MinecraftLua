@@ -3,34 +3,39 @@ require("tests/io/testsChannel")
 require("tests/io/testsSafeConnection")
 
 local config = {
-    throwError = true
+    throwError = false
 }
 
 local countGlobalTests = 0
 local countGlobalSuccess = 0
 
 local runTests = function(aTestData)
+    local countGroupTests = 0
+    local countGroupSuccess = 0
+
     local runTest = function(aTest, aTestName)
         local countTests = 0
         local countSuccess = 0
-        local countFailure = 0
         local lastLabel = "[TEST START]"
 
         local checkFunc = function(aResult, aLabel)
+            countGlobalTests = countGlobalTests + 1
+            countGroupTests = countGroupTests + 1
             countTests = countTests + 1
             lastLabel = aLabel
 
             if aResult then
+                countGlobalSuccess = countGlobalSuccess + 1
+                countGroupSuccess = countGroupSuccess + 1
                 countSuccess = countSuccess + 1
 
                 return
             end
 
-            countFailure = countFailure + 1
             print("    Check failed: " .. aLabel .. "(" .. countTests .. ")")
         end
 
-        print("  " .. aTestName .. ":")
+        print("  " .. aTestName)
 
         local executor = pcall
 
@@ -47,9 +52,6 @@ local runTests = function(aTestData)
         else
             print("    Tests threw an error after " .. lastLabel .. "(" .. countTests .. ")")
         end
-
-        countGlobalTests = countGlobalTests + countTests
-        countGlobalSuccess = countGlobalSuccess + countSuccess
     end
 
     print(aTestData.name)
@@ -57,6 +59,8 @@ local runTests = function(aTestData)
     for _, testData in ipairs(aTestData.tests) do
         runTest(testData.test, testData.name)
     end
+    
+    print("  Group tests passed: " .. countGroupSuccess .. "/" .. countGroupTests)
 end
 
 runTests(testsChannel)

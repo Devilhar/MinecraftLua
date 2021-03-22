@@ -7,7 +7,7 @@ require("tests/io/ioCommon")
 
 -- iChannel
 
-local testChannelCreation = function(aCheck)
+local testCreation = function(aCheck)
     local networkMock = networkMockCreate()
 
     local iModemA = networkMock.modemCreate("modemA")
@@ -44,8 +44,8 @@ testsChannel = {
     name = "Channel",
     tests = {
         {
-            name = "ChannelCreation",
-            test = testChannelCreation
+            name = "Creation",
+            test = testCreation
         }
     }
 }

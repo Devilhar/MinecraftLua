@@ -36,7 +36,7 @@ local connectorSetupDataServer = {
 
 -- iSafeConnectionConnector
 
-testSafeConnectionClientMessage = function(aCheck)
+local testConnectorMessage = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
     local queueServer = createMessageQueue(channelSocketServer)
     
@@ -183,7 +183,7 @@ testSafeConnectionClientMessage = function(aCheck)
     aCheck(#messagePayloadsClient == 3,                 #messagePayloadsClient .. " == 3")
 end
 
-testSafeConnectionClientPing = function(aCheck)
+local testConnectorPing = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
     local queueServer = createMessageQueue(channelSocketServer)
     
@@ -258,7 +258,7 @@ testSafeConnectionClientPing = function(aCheck)
 
 end
 
-testSafeConnectionClientTimeout = function(aCheck)
+local testConnectorTimeout = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
     local queueServer = createMessageQueue(channelSocketServer)
     
@@ -310,7 +310,7 @@ testSafeConnectionClientTimeout = function(aCheck)
     aCheck(countMessage == 0,               countMessage .. " == 0")
 end
 
-testSafeConnectionClientTimeoutAfterPing = function(aCheck)
+local testConnectorTimeoutAfterPing = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
     local queueServer = createMessageQueue(channelSocketServer)
     
@@ -384,7 +384,7 @@ testSafeConnectionClientTimeoutAfterPing = function(aCheck)
     aCheck(countMessage == 0,               countMessage .. " == 0")
 end
 
-testSafeConnectionClientCloseFromServer = function(aCheck)
+local testConnectorCloseFromServer = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
     local queueServer = createMessageQueue(channelSocketServer)
     
@@ -436,7 +436,7 @@ testSafeConnectionClientCloseFromServer = function(aCheck)
     aCheck(countMessage == 0,               countMessage .. " == 0")
 end
 
-testSafeConnectionClientCloseFromClient = function(aCheck)
+local testConnectorCloseFromClient = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
     local queueServer = createMessageQueue(channelSocketServer)
     
@@ -497,7 +497,7 @@ end
 
 -- iSafeConnectionAcceptor
 
-testSafeConnectionAcceptor = function(aCheck)
+local testAcceptor = function(aCheck)
     local channelSocketClient, channelSocketServer = setupChannelSockets(connectorSetupDataClient, connectorSetupDataServer)
 
     local queueClient = createMessageQueue(channelSocketClient)
@@ -571,7 +571,7 @@ end
 
 -- iSafeConnection Connection
 
-testSafeConnection = function(aCheck)
+local testConnection = function(aCheck)
     
     local countServerClosed             = 0
     local countServerConnect            = 0
@@ -680,11 +680,11 @@ testSafeConnection = function(aCheck)
 
     clientAConnector = iSafeConnection.connect(clientAChannelSocket, "modemServer", onClientAConnect, onClientAClosed, onClientAMessage)
 
-    aCheck(serverAcceptor.isOpen(),         tostring(serverAcceptor.isOpen()))
-    aCheck(serverConnectorA.isOpen(),       tostring(serverConnectorA.isOpen()))
-    aCheck(not serverConnectorB,            "not " .. tostring(serverConnectorB))
-    aCheck(clientAConnector.isOpen(),       tostring(clientAConnector.isOpen()))
-    aCheck(not clientBConnector,            "not " .. tostring(clientBConnector))
+    aCheck(serverAcceptor.isOpen(),             tostring(serverAcceptor.isOpen()))
+    aCheck(serverConnectorA.isOpen(),           tostring(serverConnectorA.isOpen()))
+    aCheck(not serverConnectorB,                "not " .. tostring(serverConnectorB))
+    aCheck(clientAConnector.isOpen(),           tostring(clientAConnector.isOpen()))
+    aCheck(not clientBConnector,                "not " .. tostring(clientBConnector))
     aCheck(#serverMessageQueue          == 0,   #serverMessageQueue         .. " == 0")
     aCheck(#clientAMessageQueue         == 0,   #clientAMessageQueue        .. " == 0")
     aCheck(#clientBMessageQueue         == 0,   #clientBMessageQueue        .. " == 0")
@@ -878,36 +878,36 @@ testsSafeConnection = {
     name = "SafeConnection",
     tests = {
         {
-            name = "SafeConnectionClientMessage",
-            test = testSafeConnectionClientMessage
+            name = "ConnectorMessage",
+            test = testConnectorMessage
         },
         {
-            name = "SafeConnectionClientPing",
-            test = testSafeConnectionClientPing
+            name = "ConnectorPing",
+            test = testConnectorPing
         },
         {
-            name = "SafeConnectionClientTimeout",
-            test = testSafeConnectionClientTimeout
+            name = "ConnectorTimeout",
+            test = testConnectorTimeout
         },
         {
-            name = "SafeConnectionClientTimeoutAfterPing",
-            test = testSafeConnectionClientTimeoutAfterPing
+            name = "ConnectorTimeoutAfterPing",
+            test = testConnectorTimeoutAfterPing
         },
         {
-            name = "SafeConnectionClientCloseFromServer",
-            test = testSafeConnectionClientCloseFromServer
+            name = "ConnectorCloseFromServer",
+            test = testConnectorCloseFromServer
         },
         {
-            name = "SafeConnectionClientCloseFromClient",
-            test = testSafeConnectionClientCloseFromClient
+            name = "ConnectorCloseFromClient",
+            test = testConnectorCloseFromClient
         },
         {
-            name = "SafeConnectionAcceptor",
-            test = testSafeConnectionAcceptor
+            name = "Acceptor",
+            test = testAcceptor
         },
         {
-            name = "SafeConnection",
-            test = testSafeConnection
+            name = "Connection",
+            test = testConnection
         }
     }
 }
